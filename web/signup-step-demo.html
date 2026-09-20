@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PassVault Two Step Signup Demo</title>
+    <style>
+      :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#151817;background:#eef3ed}*{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#eef3ed,#fbfaf5)}main{width:min(460px,100%);border:1px solid #d8ddd5;border-radius:10px;background:white;padding:24px;box-shadow:0 20px 60px rgba(29,42,35,.14)}h1{margin:0 0 6px;font-size:26px}p{margin:0 0 20px;color:#626a65}form{display:grid;gap:14px}label{display:grid;gap:7px;color:#4a524d;font-size:14px;font-weight:800}input{width:100%;border:1px solid #cfd7ce;border-radius:7px;padding:12px;font:inherit;font-size:16px}button{min-height:44px;border:0;border-radius:7px;background:#267365;color:white;font:inherit;font-weight:900;cursor:pointer}.status{margin-top:16px;min-height:44px;border-radius:7px;background:#f1f5ef;padding:12px;color:#34403a}.hidden{display:none}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>단계형 회원가입 테스트</h1>
+      <p>아이디를 먼저 만들고 다음 화면에서 비밀번호를 만드는 사이트를 흉내 냅니다.</p>
+      <form id="stepOne">
+        <label>아이디 또는 이메일<input id="email" name="email" type="email" autocomplete="username" placeholder="name@example.com"></label>
+        <button type="submit">다음</button>
+      </form>
+      <form id="stepTwo" class="hidden">
+        <label>새 비밀번호<input id="password" name="new-password" type="password" autocomplete="new-password" placeholder="PassVault 추천 사용"></label>
+        <button type="submit">계정 생성</button>
+      </form>
+      <div id="status" class="status">아이디를 입력하고 다음을 누른 뒤, 비밀번호 칸에서 추천을 승인하세요.</div>
+    </main>
+    <script>
+      let savedEmail = "";
+      document.getElementById("stepOne").addEventListener("submit", (event) => {
+        event.preventDefault();
+        savedEmail = document.getElementById("email").value.trim();
+        if (!savedEmail) {
+          document.getElementById("status").textContent = "아이디를 먼저 입력하세요.";
+          return;
+        }
+        document.getElementById("stepOne").classList.add("hidden");
+        document.getElementById("stepTwo").classList.remove("hidden");
+        document.getElementById("password").focus();
+        document.getElementById("status").textContent = `${savedEmail}의 비밀번호를 만드세요.`;
+      });
+      document.getElementById("stepTwo").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const password = document.getElementById("password").value;
+        document.getElementById("status").textContent = password ? `${savedEmail} 계정 생성 폼 제출 완료.` : "비밀번호가 필요합니다.";
+      });
+    </script>
+  </body>
+</html>

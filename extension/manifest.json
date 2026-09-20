@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "PassVault",
+  "description": "Generate passwords and fill login forms for the current site.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "PassVault",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "options_page": "manager.html"
+}

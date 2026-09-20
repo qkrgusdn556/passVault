@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PassVault 계정 관리</title>
+    <link rel="stylesheet" href="manager.css">
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <div class="brand"><div class="mark">PV</div><div><h1>PassVault</h1><p>계정 관리</p></div></div>
+        <div class="stats">
+          <article><span>저장</span><strong id="totalCount">0</strong></article>
+          <article><span>약함</span><strong id="weakCount">0</strong></article>
+          <article><span>중복</span><strong id="reuseCount">0</strong></article>
+        </div>
+        <label>검색<input id="search" type="search" placeholder="도메인, 아이디, 메모"></label>
+        <div class="side-actions">
+          <button id="exportButton" type="button">내보내기</button>
+          <label class="importButton">가져오기<input id="importInput" type="file" accept="application/json"></label>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header>
+          <div><p class="eyebrow">확장 프로그램 저장소</p><h2>회원가입 때 저장된 계정</h2></div>
+          <button id="newButton" type="button">새 계정</button>
+        </header>
+
+        
+        <section class="editor auth-editor">
+          <form id="authForm">
+            <div class="grid">
+              <label>관리 아이디<input id="managerAuthUser" autocomplete="username" placeholder="PassVault 아이디"></label>
+              <label>새 관리 비밀번호<input id="managerAuthPassword" type="password" autocomplete="new-password" placeholder="6자리 이상"></label>
+              <label>비밀번호 확인<input id="managerAuthConfirm" type="password" autocomplete="new-password" placeholder="다시 입력"></label>
+            </div>
+            <div class="actions auth-actions-row">
+              <button id="saveAuthButton" type="submit">관리 로그인 저장</button>
+            </div>
+          </form>
+          <div id="authStatus" class="status">확장 프로그램 로그인에 사용할 아이디와 비밀번호를 설정할 수 있습니다.</div>
+        </section>
+        <section class="editor">
+          <form id="form">
+            <input id="domainKey" type="hidden">
+            <div class="grid">
+              <label>도메인<input id="domain" required placeholder="github.com"></label>
+              <label>아이디<input id="username" required placeholder="name@example.com"></label>
+              <label>비밀번호<input id="password" required type="password"></label>
+            </div>
+            <label>메모<textarea id="memo" rows="3"></textarea></label>
+            <div class="actions">
+              <button id="showButton" type="button">보기</button>
+              <button id="saveButton" type="submit">저장</button>
+              <button id="deleteButton" class="danger" type="button">삭제</button>
+            </div>
+          </form>
+          <div id="status" class="status">회원가입 승인으로 저장된 계정이 이곳에 표시됩니다.</div>
+        </section>
+
+        <section class="tableBox">
+          <table>
+            <thead><tr><th>도메인</th><th>아이디</th><th>상태</th><th>수정일</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div id="empty" class="empty">아직 저장된 계정이 없습니다.</div>
+        </section>
+      </section>
+    </main>
+    <script src="manager.js"></script>
+  </body>
+</html>
+

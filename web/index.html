@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PassVault ID Manager</title>
+    <meta name="description" content="PassVault account and ID management dashboard">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2318231f'/%3E%3Cpath d='M20 29h24v21H20z' fill='%23f4f0dd'/%3E%3Cpath d='M25 29v-7a7 7 0 0 1 14 0v7' fill='none' stroke='%2356b6a7' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='39' r='4' fill='%2356b6a7'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar" aria-label="PassVault navigation">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">PV</div>
+          <div><h1>PassVault</h1><p>ID Manager</p></div>
+        </div>
+        <div class="summary-grid" aria-label="Account summary">
+          <article><span>전체</span><strong id="totalCount">0</strong></article>
+          <article><span>약함</span><strong id="weakCount">0</strong></article>
+          <article><span>중복</span><strong id="reuseCount">0</strong></article>
+        </div>
+        <label class="search">검색<input id="searchInput" type="search" placeholder="사이트, 아이디, 메모"></label>
+        <div class="sidebar-actions">
+          <button id="exportButton" type="button">내보내기</button>
+          <label class="import-button">가져오기<input id="importInput" type="file" accept="application/json"></label>
+        </div>
+      </aside>
+      <section class="workspace" aria-label="Account manager">
+        <header class="workspace-header">
+          <div><p class="eyebrow">계정 관리</p><h2>사이트별 아이디와 비밀번호</h2></div>
+          <button id="newButton" type="button">새 계정</button>
+        </header>
+        <section class="editor" aria-label="Credential editor">
+          <form id="credentialForm">
+            <input id="recordId" type="hidden">
+            <div class="form-grid">
+              <label>사이트<input id="siteInput" required placeholder="example.com" autocomplete="off"></label>
+              <label>아이디<input id="usernameInput" required placeholder="name@example.com" autocomplete="off"></label>
+              <label class="password-field">비밀번호<span class="password-row"><input id="passwordInput" required type="password" autocomplete="off"><button id="togglePassword" type="button">보기</button></span></label>
+              <label>길이<input id="lengthInput" type="number" min="12" max="128" value="20"></label>
+            </div>
+            <label>메모<textarea id="memoInput" rows="3" placeholder="복구 이메일, 2FA 위치, 결제 메모 등"></textarea></label>
+            <div class="form-actions">
+              <button id="generateButton" type="button">비밀번호 생성</button>
+              <button id="saveButton" type="submit">저장</button>
+              <button id="deleteButton" class="danger" type="button">삭제</button>
+            </div>
+          </form>
+          <div id="status" class="status" role="status">브라우저 안에만 저장됩니다. 중요한 vault 연동은 native bridge 단계에서 붙이면 됩니다.</div>
+        </section>
+        <section class="table-shell" aria-label="Saved accounts">
+          <table>
+            <thead><tr><th>사이트</th><th>아이디</th><th>상태</th><th>수정일</th></tr></thead>
+            <tbody id="accountTable"></tbody>
+          </table>
+          <div id="emptyState" class="empty-state">저장된 계정이 없습니다. 위 입력칸에서 첫 계정을 추가하세요.</div>
+        </section>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+# Build outputs
+build/
+build-direct/
+*.obj
+*.pdb
+*.exe
+*.dll
+
+# Local vault data
+vault.json
+*.tmp
+passvault_test_vault.json
+
+# Editor and OS files
+.vscode/
+.vs/
+*.user
+Thumbs.db
+desktop.ini

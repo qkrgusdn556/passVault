@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PassVault Login Demo</title>
+    <style>
+      :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#151817;background:#eef3ed}*{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#eef3ed,#fbfaf5)}main{width:min(420px,100%);border:1px solid #d8ddd5;border-radius:10px;background:white;padding:24px;box-shadow:0 20px 60px rgba(29,42,35,.14)}h1{margin:0 0 6px;font-size:26px}p{margin:0 0 20px;color:#626a65}form{display:grid;gap:14px}label{display:grid;gap:7px;color:#4a524d;font-size:14px;font-weight:800}input{width:100%;border:1px solid #cfd7ce;border-radius:7px;padding:12px;font:inherit;font-size:16px}button{min-height:44px;border:0;border-radius:7px;background:#267365;color:white;font:inherit;font-weight:900;cursor:pointer}.status{margin-top:16px;min-height:44px;border-radius:7px;background:#f1f5ef;padding:12px;color:#34403a}.hint{margin-top:14px;font-size:13px;line-height:1.5;color:#626a65}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PassVault 로그인 테스트</h1>
+      <p>확장 프로그램이 이 폼에 아이디와 비밀번호를 채우는지 확인하는 페이지입니다.</p>
+      <form id="loginForm">
+        <label>아이디<input id="username" name="username" autocomplete="username" placeholder="아이디"></label>
+        <label>비밀번호<input id="password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호"></label>
+        <button type="submit">로그인</button>
+      </form>
+      <div id="status" class="status">아직 로그인하지 않았습니다.</div>
+      <div class="hint">확장 프로그램에서 localhost 계정을 저장한 뒤 Fill을 누르세요. 로그인 버튼은 직접 누르는 방식입니다.</div>
+    </main>
+    <script>
+      document.getElementById("loginForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        const status = document.getElementById("status");
+        if (!username || !password) {
+          status.textContent = "아이디와 비밀번호가 모두 필요합니다.";
+          return;
+        }
+        status.textContent = `${username} 계정으로 로그인 폼 제출 완료. 실제 서비스에서는 여기서 서버 인증이 진행됩니다.`;
+      });
+    </script>
+  </body>
+</html>

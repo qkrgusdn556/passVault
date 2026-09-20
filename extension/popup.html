@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PassVault</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>PassVault</h1>
+          <p id="domain">현재 사이트</p>
+        </div>
+        <button id="lock" class="icon-button" type="button">잠금</button>
+      </header>
+
+      <section class="status" id="status">준비 중</section>
+      <button id="manager" class="manager-button" type="button">계정 관리 열기</button>
+
+      <section id="authPanel" class="auth-panel">
+        <label>
+          관리 아이디
+          <input id="authUser" autocomplete="username" placeholder="PassVault 아이디">
+        </label>
+        <label>
+          관리 비밀번호
+          <input id="authPassword" type="password" autocomplete="current-password" placeholder="비밀번호">
+        </label>
+        <button id="unlock" type="button">로그인</button>
+      </section>
+
+      <section id="vaultPanel" class="vault-panel" hidden>
+        <div class="credential-card">
+          <span>저장된 아이디</span>
+          <strong id="savedUsername">-</strong>
+        </div>
+        <div class="actions single">
+          <button id="fill" type="button">자동입력</button>
+        </div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
