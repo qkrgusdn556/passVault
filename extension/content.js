@@ -180,6 +180,29 @@ function fillCredential(credential) {
   return { ok: true };
 }
 
+async function signupUsernameForFields(fields) {
+  if (fields.username?.value?.trim()) await rememberUsernameFromInput(fields.username);
+  return fields.username?.value?.trim() ||
+    await getPendingUsername() ||
+    usernameFromPageContext();
+}
+
+async function saveManualSignupPassword() {
+  const fields = findFields();
+  if (!fields || !isSignupLike(fields) || fields.password.dataset.passvaultAccepted === "true") return;
+  const password = fields.password.value || "";
+  if (password.length < 8 || fields.password.dataset.passvaultManualSaved === password) return;
+  if (fields.confirmPassword?.value && fields.confirmPassword.value !== password) return;
+
+  const username = await signupUsernameForFields(fields);
+  if (!username) return;
+  fields.password.dataset.passvaultManualSaved = password;
+  chrome.runtime.sendMessage({
+    type: "PASSVAULT_SAVE_FROM_PAGE",
+    credential: { username, password, memo: "Saved from manually entered signup password" }
+  });
+}
+
 function looksLikeSignupPage() {
   if (signupUrlHint()) return true;
   if (loginUrlHint()) return false;
@@ -288,10 +311,7 @@ async function makePanel(fields, pendingUsername) {
   panel.querySelector("[data-passvault-use]").addEventListener("click", async () => {
     const password = passwordInput.value;
     if (fields.username?.value?.trim()) await rememberUsernameFromInput(fields.username);
-    const username = fields.username?.value?.trim() ||
-      pendingUsername ||
-      await getPendingUsername() ||
-      usernameFromPageContext();
+    const username = pendingUsername || await signupUsernameForFields(fields);
     const status = panel.querySelector("[data-passvault-status]");
     if (!username) {
       status.textContent = "이전 단계의 아이디를 찾지 못했습니다. 이전 화면으로 돌아가 아이디를 다시 입력한 뒤 진행하세요.";
@@ -334,16 +354,30 @@ document.addEventListener("input", (event) => {
   if (event.target instanceof HTMLInputElement && isUsernameInput(event.target)) {
     window.clearTimeout(event.target.passvaultRememberTimer);
     event.target.passvaultRememberTimer = window.setTimeout(() => rememberUsernameFromInput(event.target), 250);
+  } else if (event.target instanceof HTMLInputElement && event.target.type === "password") {
+    window.clearTimeout(event.target.passvaultManualSaveTimer);
+    event.target.passvaultManualSaveTimer = window.setTimeout(saveManualSignupPassword, 700);
   }
 });
 
 document.addEventListener("change", (event) => {
   if (event.target instanceof HTMLInputElement) rememberUsernameFromInput(event.target);
+  if (event.target instanceof HTMLInputElement && event.target.type === "password") saveManualSignupPassword();
 });
 
 document.addEventListener("focusout", (event) => {
   if (event.target instanceof HTMLInputElement) rememberUsernameFromInput(event.target);
+  if (event.target instanceof HTMLInputElement && event.target.type === "password") saveManualSignupPassword();
 });
+
+document.addEventListener("submit", () => {
+  saveManualSignupPassword();
+}, true);
+
+document.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target.closest("button, input[type='submit'], input[type='button'], [role='button']") : null;
+  if (target) setTimeout(saveManualSignupPassword, 0);
+}, true);
 
 async function maybeFillSelectedLoginPassword(target) {
   if (!(target instanceof HTMLInputElement) || target.type !== "password" || isSignupLike(findFields() || { passwords: [], password: target })) return;
