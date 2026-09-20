@@ -1,72 +1,140 @@
 # PassVault v0.5
 
-Codex and Windows builds of the encrypted PassVault core.
+PassVault는 암호화된 비밀번호 금고 코어와 브라우저 확장 프로그램 프로토타입입니다. 현재 버전은 기능 흐름을 확인하기 위한 개발 단계이며, 실제 중요한 계정의 비밀번호 저장 용도로는 아직 권장하지 않습니다.
 
-## Included
+## 포함된 기능
 
-- Argon2id master-key derivation
-- XChaCha20-Poly1305 authenticated vault encryption
-- Site/account add, view, edit, delete, and search
-- Cryptographically secure password generation
-- Weak-password and password-reuse audit
-- Five-minute inactivity lock (`PASSVAULT_AUTO_LOCK_SECONDS` can override it)
-- Password memory clearing when the vault locks
-- Automated encryption, wrong-password, generator, and audit tests
+### C++ 코어
 
-The vault file contains only salt, nonce, and authenticated ciphertext. Website usernames,
-passwords, and memos are inside the encrypted payload.
+- Argon2id 기반 마스터 키 생성
+- XChaCha20-Poly1305 인증 암호화
+- 사이트/계정 추가, 조회, 수정, 삭제, 검색
+- 안전한 랜덤 비밀번호 생성
+- 약한 비밀번호 및 중복 비밀번호 점검
+- 5분 비활성 자동 잠금
+- 잠금 시 비밀번호 메모리 초기화
+- 암호화, 잘못된 비밀번호, 생성기, 점검 테스트
 
-## Run in Codex/Linux
+### 브라우저 확장 프로그램
 
-The Codex runtime already provides the libsodium shared library:
+- 회원가입 화면에서 추천 비밀번호 표시
+- 사용자가 승인하면 비밀번호 입력 및 도메인/아이디/비밀번호 저장
+- 아이디와 비밀번호 입력 단계가 분리된 회원가입 화면 지원
+- 로그인 화면에서 저장된 아이디 사용 안내
+- PassVault 관리 로그인 후 자동입력
+- 확장 팝업에서는 계정 수정/저장/삭제 불가
+- 계정 관리는 별도 관리 화면에서만 가능
 
-```bash
-make
-./build/passvault_core
-```
+### 계정 관리 화면
 
-Run tests:
+- 저장된 도메인, 아이디, 비밀번호 목록 보기
+- 계정 추가, 수정, 삭제
+- 검색
+- 약한 비밀번호 및 중복 비밀번호 표시
+- JSON 내보내기/가져오기
+- 관리 아이디/비밀번호 설정 및 변경
 
-```bash
-make test
-```
+## Windows에서 실행
 
-## Build on Windows with the existing vcpkg setup
-
-From a Visual Studio 2022 x64 Developer Command Prompt:
+빌드:
 
 ```powershell
-cd C:\dev\PassVault
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-  -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-.\build\Release\passvault_core.exe
+cd C:\Users\qkrgu\Desktop\PassVault
+.\build_windows.bat
 ```
 
-## Important migration note
+실행:
 
-This reconstructed Codex project uses a documented v1 encrypted payload format. Keep a backup
-of any existing `vault.json`. If the earlier local implementation used a different serialization
-format, create a new vault with this build rather than overwriting the old file.
+```powershell
+.\build-direct\passvault_core.exe
+```
 
+테스트:
 
-An ID management site is included in web/. Open web/index.html in a browser to add, edit, search, import, and export site accounts using local browser storage.
+```powershell
+.\build-direct\passvault_tests.exe
+```
 
-## Next integration phase
+정상 테스트 출력:
 
-An initial browser extension is included in `extension/`. Load it as an unpacked Chrome or Edge
-extension for password generation, per-site browser storage, and form filling.
+```text
+All PassVault tests passed.
+```
 
-The production browser extension should communicate with a local native-messaging bridge, not read
-`vault.json` directly. The intended flow is:
+## 브라우저 확장 프로그램 설치
 
-1. Detect a signup/login form and normalize the exact domain.
-2. Ask the local PassVault process for a generated password or a credential request.
-3. For login, create a short-lived challenge and send only the approval request to the phone.
-4. Verify the phone signature locally, recheck the domain, then release one credential to the extension.
-5. Fill the fields; do not automatically click the final login or signup button.
+1. Chrome 또는 Edge에서 확장 프로그램 관리 페이지를 엽니다.
+   - Chrome: `chrome://extensions`
+   - Edge: `edge://extensions`
+2. 개발자 모드를 켭니다.
+3. `압축해제된 확장 프로그램 로드`를 누릅니다.
+4. 아래 폴더를 선택합니다.
 
-Real background phone notifications require the Flutter app, Firebase project configuration,
-and FCM/APNs credentials. Those secrets are intentionally not included in this core package.
+```text
+C:\Users\qkrgu\Desktop\PassVault\extension
+```
 
+코드를 수정한 뒤에는 확장 프로그램 관리 페이지에서 PassVault를 새로고침해야 변경사항이 적용됩니다.
+
+## 테스트 페이지
+
+로컬 테스트 서버 실행:
+
+```powershell
+cd C:\Users\qkrgu\Desktop\PassVault\web
+$env:PORT='8791'; node serve.js
+```
+
+테스트 주소:
+
+- 회원가입 테스트: `http://127.0.0.1:8791/signup-demo.html`
+- 단계형 회원가입 테스트: `http://127.0.0.1:8791/signup-step-demo.html`
+- 로그인 테스트: `http://127.0.0.1:8791/login-demo.html`
+- 웹 계정 관리 프로토타입: `http://127.0.0.1:8791/index.html`
+
+## 사용 흐름
+
+### 회원가입
+
+1. 아이디 또는 이메일을 직접 입력합니다.
+2. 비밀번호 칸을 클릭합니다.
+3. PassVault 추천 비밀번호 패널이 뜹니다.
+4. `사용 승인`을 누릅니다.
+5. 비밀번호가 입력되고, 현재 도메인/아이디/비밀번호가 저장됩니다.
+6. 사이트의 계정 생성 버튼은 사용자가 직접 누릅니다.
+
+### 로그인
+
+1. 로그인 페이지에서 아이디 칸을 클릭합니다.
+2. 저장된 아이디가 있으면 작은 안내 패널이 뜹니다.
+3. `아이디 사용`을 누릅니다.
+4. PassVault 로그인이 이미 되어 있으면 비밀번호도 같이 입력됩니다.
+5. 잠겨 있다면 확장 아이콘을 눌러 관리 아이디/비밀번호로 로그인한 뒤 `자동입력`을 누릅니다.
+6. 사이트의 로그인 버튼은 사용자가 직접 누릅니다.
+
+## 보안 상태
+
+현재 확장 프로그램은 프로토타입입니다.
+
+주의할 점:
+
+- 확장 프로그램 저장소에 사이트 비밀번호가 평문으로 저장됩니다.
+- 관리 로그인은 해시 기반이지만, 실제 비밀번호 관리자 수준의 강한 인증은 아닙니다.
+- JSON 내보내기 파일도 암호화되지 않습니다.
+- 실제 중요한 계정 저장에는 아직 적합하지 않습니다.
+
+실사용 수준으로 가려면 다음 구조가 필요합니다.
+
+```text
+브라우저 확장 프로그램
+→ Native Messaging Bridge
+→ C++ PassVault 암호화 vault
+→ 마스터 비밀번호 또는 Windows Hello 인증
+→ 도메인 검증 후 1회성 자동입력
+```
+
+## vault 파일 형식 안내
+
+C++ 코어가 만드는 `vault.json`에는 salt, nonce, 인증된 ciphertext만 저장됩니다. 웹사이트 아이디, 비밀번호, 메모는 암호화된 payload 안에 들어갑니다.
+
+기존 `vault.json`이 있다면 백업해두세요. 이전 구현과 직렬화 형식이 다를 수 있으므로, 호환되지 않는 경우 새 vault를 만드는 것이 안전합니다.
