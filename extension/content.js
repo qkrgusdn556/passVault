@@ -132,9 +132,10 @@ async function getPendingUsername() {
 
 function cleanUsernameCandidate(value) {
   const trimmed = String(value || "").trim();
-  if (!trimmed || trimmed.length < 2 || trimmed.length > 254) return "";
+  if (!trimmed || trimmed.length < 2) return "";
   const email = trimmed.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
   if (email) return email;
+  if (trimmed.length > 254) return "";
   if (/^[a-z0-9._%+-]{3,64}$/i.test(trimmed) && /accounts\.google\./i.test(location.hostname)) {
     return `${trimmed}@gmail.com`;
   }
@@ -152,6 +153,11 @@ function usernameFromPageContext() {
 
   const textCandidate = cleanUsernameCandidate(document.body.innerText);
   if (textCandidate) return textCandidate;
+
+  for (const element of Array.from(document.querySelectorAll("div, span, p, strong, em, button"))) {
+    const candidate = cleanUsernameCandidate(element.textContent);
+    if (candidate) return candidate;
+  }
 
   for (const element of Array.from(document.querySelectorAll("[data-email], [data-identifier], [aria-label], [title]"))) {
     const candidate = cleanUsernameCandidate(
