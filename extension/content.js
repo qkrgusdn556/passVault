@@ -217,28 +217,31 @@ function findUsernameFieldOnly() {
   return username;
 }
 
-function showUsernamePrompt(input, username) {
-  if (!username || document.getElementById("passvault-username-panel")) return;
+function showUsernamePrompt(input, usernames) {
+  const list = Array.isArray(usernames) ? usernames.filter(Boolean) : [usernames].filter(Boolean);
+  if (!list.length || document.getElementById("passvault-username-panel")) return;
   input.dataset.passvaultUsernamePrompted = "true";
   const panel = document.createElement("div");
   panel.id = "passvault-username-panel";
-  panel.style.cssText = "position:absolute;z-index:2147483646;width:280px;border:1px solid #cfd8d1;border-radius:8px;background:#fff;color:#151817;box-shadow:0 16px 40px rgba(20,30,25,.18);padding:12px;font:13px system-ui,-apple-system,Segoe UI,sans-serif;";
-  const safeUsername = username.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+  panel.style.cssText = "position:absolute;z-index:2147483646;width:300px;border:1px solid #cfd8d1;border-radius:8px;background:#fff;color:#151817;box-shadow:0 16px 40px rgba(20,30,25,.18);padding:12px;font:13px system-ui,-apple-system,Segoe UI,sans-serif;";
+  const buttons = list.map((username) => {
+    const safeUsername = username.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+    return `<button type="button" data-passvault-use-id="${safeUsername}" style="width:100%;border:0;border-radius:6px;background:#267365;color:white;font-weight:800;padding:8px;cursor:pointer;margin-bottom:6px;text-align:left;word-break:break-all;">${safeUsername}</button>`;
+  }).join("");
   panel.innerHTML = `
-    <div style="font-weight:850;margin-bottom:5px;">저장된 아이디가 있습니다</div>
-    <div style="margin-bottom:9px;color:#34403a;word-break:break-all;">${safeUsername}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <button type="button" data-passvault-use-id style="border:0;border-radius:6px;background:#267365;color:white;font-weight:800;padding:8px;cursor:pointer;">아이디 사용</button>
-      <button type="button" data-passvault-close-id style="border:0;border-radius:6px;background:#e5ece6;color:#1d3732;font-weight:800;padding:8px;cursor:pointer;">닫기</button>
-    </div>
+    <div style="font-weight:850;margin-bottom:8px;">저장된 아이디가 있습니다</div>
+    <div>${buttons}</div>
+    <button type="button" data-passvault-close-id style="width:100%;border:0;border-radius:6px;background:#e5ece6;color:#1d3732;font-weight:800;padding:8px;cursor:pointer;">닫기</button>
     <div data-passvault-note style="margin-top:8px;color:#59645d;font-size:12px;line-height:1.35;">PassVault 로그인이 되어 있으면 비밀번호도 같이 입력됩니다.</div>
   `;
   document.body.appendChild(panel);
   positionNear(panel, input);
-  panel.querySelector("[data-passvault-use-id]").addEventListener("click", async () => {
+  for (const button of panel.querySelectorAll("[data-passvault-use-id]")) {
+    button.addEventListener("click", async () => {
+    const username = button.getAttribute("data-passvault-use-id") || "";
     setNativeValue(input, username);
     sessionStorage.setItem("passvault.selectedLoginUsername", username);
-    const response = await send({ type: "PASSVAULT_GET_FOR_URL", url: location.href });
+    const response = await send({ type: "PASSVAULT_GET_FOR_URL", url: location.href, username });
     if (response?.ok && response.credential?.password) {
       const result = fillCredential(response.credential);
       if (result.ok) {
@@ -249,6 +252,7 @@ function showUsernamePrompt(input, username) {
     const note = panel.querySelector("[data-passvault-note]");
     if (note) note.textContent = "아이디를 넣었습니다. 비밀번호 화면에서 다시 자동입력됩니다.";
   });
+  }
   panel.querySelector("[data-passvault-close-id]").addEventListener("click", () => panel.remove());
 }
 
@@ -256,7 +260,7 @@ function maybePromptSavedUsername(target) {
   const usernameInput = target instanceof HTMLInputElement && target.type !== "password" ? findUsernameFieldOnly() : null;
   if (!usernameInput) return;
   chrome.runtime.sendMessage({ type: "PASSVAULT_PEEK_USERNAME_FOR_URL", url: location.href }, (response) => {
-    if (response?.ok && response.hasCredential && response.username) showUsernamePrompt(usernameInput, response.username);
+    if (response?.ok && response.hasCredential) showUsernamePrompt(usernameInput, response.usernames || response.username);
   });
 }
 
@@ -383,7 +387,7 @@ async function maybeFillSelectedLoginPassword(target) {
   if (!(target instanceof HTMLInputElement) || target.type !== "password" || isSignupLike(findFields() || { passwords: [], password: target })) return;
   const selectedUsername = sessionStorage.getItem("passvault.selectedLoginUsername") || "";
   if (!selectedUsername) return;
-  const response = await send({ type: "PASSVAULT_GET_FOR_URL", url: location.href });
+  const response = await send({ type: "PASSVAULT_GET_FOR_URL", url: location.href, username: selectedUsername });
   if (!response?.ok || !response.credential?.password) return;
   if (response.credential.username && response.credential.username.toLowerCase() !== selectedUsername.toLowerCase()) return;
   setNativeValue(target, response.credential.password);

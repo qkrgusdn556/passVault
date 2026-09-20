@@ -17,6 +17,22 @@ function normalizeDomain(url) {
   return parsed.hostname.replace(/^www\./, "").toLowerCase();
 }
 
+function credentialList(value) {
+  if (Array.isArray(value)) return value.filter((item) => item && item.username && item.password);
+  if (value && value.username && value.password) return [value];
+  return [];
+}
+
+function firstCredential(value) {
+  return credentialList(value)[0] || null;
+}
+
+function findCredential(value, username) {
+  const list = credentialList(value);
+  const normalized = String(username || "").trim().toLowerCase();
+  return list.find((item) => String(item.username || "").trim().toLowerCase() === normalized) || list[0] || null;
+}
+
 async function hashPassword(username, password) {
   const user = String(username || "").trim().toLowerCase();
   const data = new TextEncoder().encode(`passvault:${user}:${password}`);
@@ -39,15 +55,26 @@ function isUnlocked(unlockedUntil) {
 async function saveCredentialForUrl(url, credential) {
   const domain = normalizeDomain(url);
   const { credentials, pendingUsernames } = await getState({ credentials: {}, pendingUsernames: {} });
-  credentials[domain] = {
-    username: credential.username || "",
+  const username = String(credential.username || "").trim();
+  const list = credentialList(credentials[domain]);
+  const existingIndex = list.findIndex((item) => String(item.username || "").trim().toLowerCase() === username.toLowerCase());
+  const saved = {
+    username,
     password: credential.password || "",
     memo: credential.memo || "",
     updatedAt: new Date().toISOString()
   };
+
+  if (existingIndex >= 0) {
+    list[existingIndex] = saved;
+  } else {
+    list.push(saved);
+  }
+
+  credentials[domain] = list;
   delete pendingUsernames[domain];
   await setState({ credentials, pendingUsernames });
-  return { domain, credential: credentials[domain] };
+  return { domain, credential: saved, credentials: list };
 }
 
 async function setAuth(username, password) {
@@ -108,8 +135,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
-
-
     if (message.type === "PASSVAULT_REMEMBER_SIGNUP_USERNAME") {
       const domain = normalizeDomain(message.url);
       const username = String(message.username || "").trim();
@@ -130,13 +155,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ ok: true, domain, username: fresh ? pending.username : "" });
       return;
     }
+
     if (message.type === "PASSVAULT_PEEK_USERNAME_FOR_URL") {
       const domain = normalizeDomain(message.url);
       const state = await getState(defaultState);
-      const credential = state.credentials[domain] || null;
-      sendResponse({ ok: true, domain, username: credential?.username || "", hasCredential: Boolean(credential) });
+      const list = credentialList(state.credentials[domain]);
+      const credential = list[0] || null;
+      sendResponse({
+        ok: true,
+        domain,
+        username: credential?.username || "",
+        usernames: list.map((item) => item.username),
+        hasCredential: list.length > 0
+      });
       return;
     }
+
     if (message.type === "PASSVAULT_GET_FOR_URL") {
       const domain = normalizeDomain(message.url);
       const state = await getState(defaultState);
@@ -144,7 +178,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: false, locked: true, error: "먼저 PassVault 로그인을 하세요." });
         return;
       }
-      sendResponse({ ok: true, domain, credential: state.credentials[domain] || null });
+      const list = credentialList(state.credentials[domain]);
+      sendResponse({ ok: true, domain, credential: findCredential(list, message.username), credentials: list });
       return;
     }
 
@@ -152,7 +187,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   })().catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
 });
-
-
-
-
