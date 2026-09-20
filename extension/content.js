@@ -73,22 +73,22 @@ function nearbyText(input) {
 }
 
 function signupUrlHint() {
-  return /signup|sign-up|register|join|create-account|회원가입|가입/.test(location.href.toLowerCase());
+  return /signup|sign-up|register|join|create-account|createaccount|webcreateaccount|회원가입|가입/.test(location.href.toLowerCase());
 }
 
 function loginUrlHint() {
-  return /login|signin|sign-in|session|로그인/.test(location.href.toLowerCase());
+  return !signupUrlHint() && /login|signin|sign-in|session|로그인/.test(location.href.toLowerCase());
 }
 
 function isSignupLike(fields) {
   const passwordMeta = inputName(fields.password);
   const localText = nearbyText(fields.password);
   if (fields.passwords.length >= 2) return true;
-  if (fields.password.autocomplete === "new-password") return true;
-  if (/new|signup|sign-up|register|create|join|가입|회원가입|계정 만들기|새 비밀번호/.test(passwordMeta)) return true;
+  if ((fields.password.autocomplete || "").includes("new-password")) return true;
+  if (/new|signup|sign-up|register|create|join|passwd|confirm|가입|회원가입|계정 만들기|새 비밀번호/.test(passwordMeta)) return true;
   if (signupUrlHint()) return true;
   if (loginUrlHint()) return false;
-  return /sign up|signup|create account|register|join now|가입|회원가입|계정 만들기/.test(localText);
+  return /sign up|signup|create account|register|join now|create.*password|choose.*password|confirm.*password|가입|회원가입|계정 만들기|비밀번호.*만들|비밀번호.*확인/.test(localText);
 }
 
 function positionNear(panel, target) {
@@ -241,7 +241,8 @@ async function makePanel(fields, pendingUsername) {
 
 async function maybeSuggest() {
   const fields = findFields();
-  if (!fields || loginUrlHint() || fields.password.dataset.passvaultAccepted === "true" || fields.password.dataset.passvaultDismissed === "true") return;
+  if (!fields || fields.password.dataset.passvaultAccepted === "true" || fields.password.dataset.passvaultDismissed === "true") return;
+  if (loginUrlHint() && !isSignupLike(fields)) return;
   if (fields.username?.value?.trim()) await rememberUsernameFromInput(fields.username);
   const pendingUsername = await getPendingUsername();
   if (!isSignupLike(fields) && !pendingUsername) return;
