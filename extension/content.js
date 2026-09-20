@@ -114,6 +114,41 @@ async function getPendingUsername() {
   return response?.ok ? response.username || "" : "";
 }
 
+function cleanUsernameCandidate(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed.length < 2 || trimmed.length > 254) return "";
+  const email = trimmed.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  if (email) return email;
+  if (/^[a-z0-9._%+-]{3,64}$/i.test(trimmed) && /accounts\.google\./i.test(location.hostname)) {
+    return `${trimmed}@gmail.com`;
+  }
+  return "";
+}
+
+function usernameFromPageContext() {
+  const inputHints = /email|identifier|username|login|account|아이디|이메일|계정/i;
+  for (const input of Array.from(document.querySelectorAll("input"))) {
+    const meta = [input.id, input.name, input.autocomplete, input.getAttribute("aria-label")].filter(Boolean).join(" ");
+    if (!inputHints.test(meta)) continue;
+    const candidate = cleanUsernameCandidate(input.value);
+    if (candidate) return candidate;
+  }
+
+  const textCandidate = cleanUsernameCandidate(document.body.innerText);
+  if (textCandidate) return textCandidate;
+
+  for (const element of Array.from(document.querySelectorAll("[data-email], [data-identifier], [aria-label], [title]"))) {
+    const candidate = cleanUsernameCandidate(
+      element.getAttribute("data-email") ||
+      element.getAttribute("data-identifier") ||
+      element.getAttribute("aria-label") ||
+      element.getAttribute("title")
+    );
+    if (candidate) return candidate;
+  }
+  return "";
+}
+
 function fillCredential(credential) {
   const fields = findFields();
   if (!fields) return { ok: false, error: "No login form was found on this page." };
@@ -210,10 +245,13 @@ async function makePanel(fields, pendingUsername) {
 
   panel.querySelector("[data-passvault-use]").addEventListener("click", async () => {
     if (fields.username?.value?.trim()) await rememberUsernameFromInput(fields.username);
-    const username = fields.username?.value?.trim() || pendingUsername || await getPendingUsername();
+    const username = fields.username?.value?.trim() ||
+      pendingUsername ||
+      await getPendingUsername() ||
+      usernameFromPageContext();
     const status = panel.querySelector("[data-passvault-status]");
     if (!username) {
-      status.textContent = "아이디를 먼저 입력한 뒤 승인하세요.";
+      status.textContent = "이전 단계의 아이디를 찾지 못했습니다. 이전 화면으로 돌아가 아이디를 다시 입력한 뒤 진행하세요.";
       fields.username?.focus();
       return;
     }
