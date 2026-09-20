@@ -12,8 +12,14 @@ function randomInt(max) {
   return bucket[0] % max;
 }
 
-function generatePassword(length = 22) {
-  const groups = ["abcdefghijkmnopqrstuvwxyz", "ABCDEFGHJKLMNPQRSTUVWXYZ", "23456789", "!@#$%^&*()-_=+[]{}"];
+function generatePassword(options = {}) {
+  const length = Math.max(8, Math.min(128, Number(options.length) || 22));
+  const groups = [];
+  if (options.lower !== false) groups.push("abcdefghijkmnopqrstuvwxyz");
+  if (options.upper !== false) groups.push("ABCDEFGHJKLMNPQRSTUVWXYZ");
+  if (options.digits !== false) groups.push("23456789");
+  if (options.symbols !== false) groups.push("!@#$%^&*()-_=+[]{}");
+  if (!groups.length) groups.push("abcdefghijkmnopqrstuvwxyz", "23456789");
   const all = groups.join("");
   const chars = groups.map((group) => group[randomInt(group.length)]);
   while (chars.length < length) chars.push(all[randomInt(all.length)]);
@@ -24,6 +30,16 @@ function generatePassword(length = 22) {
     chars[swap] = temp;
   }
   return chars.join("");
+}
+
+function passwordOptionsFromPanel(panel) {
+  return {
+    length: panel.querySelector("[data-passvault-length]")?.value,
+    lower: panel.querySelector("[data-passvault-lower]")?.checked,
+    upper: panel.querySelector("[data-passvault-upper]")?.checked,
+    digits: panel.querySelector("[data-passvault-digits]")?.checked,
+    symbols: panel.querySelector("[data-passvault-symbols]")?.checked
+  };
 }
 
 function send(message) {
@@ -222,21 +238,41 @@ function suggestionPanelExists() {
 async function makePanel(fields, pendingUsername) {
   if (fields.password.dataset.passvaultAccepted === "true" || fields.password.dataset.passvaultDismissed === "true") return;
   if (suggestionPanelExists()) return;
-  const password = generatePassword(22);
+  const password = generatePassword({ length: 16, lower: true, upper: true, digits: true, symbols: false });
   const panel = document.createElement("div");
   panel.id = "passvault-suggestion-panel";
-  panel.style.cssText = "position:absolute;z-index:2147483647;width:300px;border:1px solid #cfd8d1;border-radius:8px;background:#fff;color:#151817;box-shadow:0 16px 40px rgba(20,30,25,.18);padding:12px;font:13px system-ui,-apple-system,Segoe UI,sans-serif;";
+  panel.style.cssText = "position:absolute;z-index:2147483647;width:330px;border:1px solid #cfd8d1;border-radius:8px;background:#fff;color:#151817;box-shadow:0 16px 40px rgba(20,30,25,.18);padding:12px;font:13px system-ui,-apple-system,Segoe UI,sans-serif;";
   panel.innerHTML = `
     <div style="font-weight:850;margin-bottom:6px;">PassVault 추천 비밀번호</div>
-    <input value="${password.replaceAll('"', '&quot;')}" readonly style="width:100%;box-sizing:border-box;border:1px solid #d5ddd4;border-radius:6px;padding:8px;margin-bottom:8px;font:13px monospace;">
+    <input data-passvault-password value="${password.replaceAll('"', '&quot;')}" readonly style="width:100%;box-sizing:border-box;border:1px solid #d5ddd4;border-radius:6px;padding:8px;margin-bottom:8px;font:13px monospace;">
+    <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center;margin-bottom:8px;">
+      <label style="font-weight:750;color:#34403a;">길이</label>
+      <input data-passvault-length type="number" min="8" max="128" value="16" style="width:100%;box-sizing:border-box;border:1px solid #d5ddd4;border-radius:6px;padding:6px;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:8px;color:#34403a;">
+      <label><input data-passvault-lower type="checkbox" checked> 소문자</label>
+      <label><input data-passvault-upper type="checkbox" checked> 대문자</label>
+      <label><input data-passvault-digits type="checkbox" checked> 숫자</label>
+      <label><input data-passvault-symbols type="checkbox"> 특수문자</label>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <button type="button" data-passvault-use style="border:0;border-radius:6px;background:#267365;color:white;font-weight:800;padding:8px;cursor:pointer;">사용 승인</button>
-      <button type="button" data-passvault-close style="border:0;border-radius:6px;background:#e5ece6;color:#1d3732;font-weight:800;padding:8px;cursor:pointer;">닫기</button>
+      <button type="button" data-passvault-regenerate style="border:0;border-radius:6px;background:#e5ece6;color:#1d3732;font-weight:800;padding:8px;cursor:pointer;">다시 생성</button>
     </div>
+    <button type="button" data-passvault-close style="width:100%;border:0;border-radius:6px;background:#eef2ee;color:#1d3732;font-weight:800;padding:8px;margin-top:8px;cursor:pointer;">닫기</button>
     <div data-passvault-status style="margin-top:8px;color:#59645d;font-size:12px;line-height:1.35;">승인하면 현재 도메인, 아이디, 비밀번호가 저장됩니다.</div>
   `;
   document.body.appendChild(panel);
   positionNear(panel, fields.password);
+
+  const passwordInput = panel.querySelector("[data-passvault-password]");
+  const regenerate = () => {
+    passwordInput.value = generatePassword(passwordOptionsFromPanel(panel));
+  };
+  panel.querySelector("[data-passvault-regenerate]").addEventListener("click", regenerate);
+  for (const control of panel.querySelectorAll("[data-passvault-length], [data-passvault-lower], [data-passvault-upper], [data-passvault-digits], [data-passvault-symbols]")) {
+    control.addEventListener("change", regenerate);
+  }
 
   panel.querySelector("[data-passvault-close]").addEventListener("click", () => {
     fields.password.dataset.passvaultDismissed = "true";
@@ -244,6 +280,7 @@ async function makePanel(fields, pendingUsername) {
   });
 
   panel.querySelector("[data-passvault-use]").addEventListener("click", async () => {
+    const password = passwordInput.value;
     if (fields.username?.value?.trim()) await rememberUsernameFromInput(fields.username);
     const username = fields.username?.value?.trim() ||
       pendingUsername ||
